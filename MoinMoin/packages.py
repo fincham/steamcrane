@@ -31,9 +31,9 @@ class ScriptException(Exception):
     def __unicode__(self):
         """ Return unicode error message """
         if isinstance(self.args[0], str):
-            return unicode(self.args[0], config.charset)
+            return str(self.args[0], config.charset)
         else:
-            return unicode(self.args[0])
+            return str(self.args[0])
 
 class RuntimeScriptException(ScriptException):
     """ Raised when the script problem occurs at runtime. """
@@ -48,14 +48,14 @@ def event_logfile(self, pagename, pagefile):
     elog = eventlog.EventLog(self.request)
     elog.add(self.request, eventtype, {'pagename': pagename}, 1, mtime_usecs)
 
-def edit_logfile_append(self, pagename, pagefile, rev, action, logname='edit-log', comment=u'', author=u"Scripting Subsystem"):
+def edit_logfile_append(self, pagename, pagefile, rev, action, logname='edit-log', comment='', author="Scripting Subsystem"):
     glog = editlog.EditLog(self.request, uid_override=author)
     pagelog = Page(self.request, pagename).getPagePath(logname, use_underlay=0, isfile=1)
     llog = editlog.EditLog(self.request, filename=pagelog,
                                uid_override=author)
     mtime_usecs = wikiutil.timestamp2version(os.path.getmtime(pagefile))
     host = '::1'
-    extra = u''
+    extra = ''
     glog.add(self.request, mtime_usecs, rev, action, pagename, host, comment)
     llog.add(self.request, mtime_usecs, rev, action, pagename, host, extra, comment)
     event_logfile(self, pagename, pagefile)
@@ -118,7 +118,7 @@ class ScriptEngine:
         self.msg = getattr(self, "msg", "")
         self.request = getattr(self, "request", None)
 
-    def do_addattachment(self, zipname, filename, pagename, author=u"Scripting Subsystem", comment=u""):
+    def do_addattachment(self, zipname, filename, pagename, author="Scripting Subsystem", comment=""):
         """
         Installs an attachment
 
@@ -139,17 +139,17 @@ class ScriptEngine:
             if not os.path.exists(target):
                 self._extractToFile(zipname, target)
                 if os.path.exists(target):
-                    filesys.chmod(target, 0666 & config.umask)
+                    filesys.chmod(target, 0o0666 & config.umask)
                     action = 'ATTNEW'
                     edit_logfile_append(self, pagename, path, rev, action, logname='edit-log',
-                                       comment=u'%(filename)s' % {"filename": filename}, author=author)
-                self.msg += u"%(filename)s attached \n" % {"filename": filename}
+                                       comment='%(filename)s' % {"filename": filename}, author=author)
+                self.msg += "%(filename)s attached \n" % {"filename": filename}
             else:
-                self.msg += u"%(filename)s not attached \n" % {"filename": filename}
+                self.msg += "%(filename)s not attached \n" % {"filename": filename}
         else:
-            self.msg += u"action add attachment: not enough rights - nothing done \n"
+            self.msg += "action add attachment: not enough rights - nothing done \n"
 
-    def do_delattachment(self, filename, pagename, author=u"Scripting Subsystem", comment=u""):
+    def do_delattachment(self, filename, pagename, author="Scripting Subsystem", comment=""):
         """
         Removes an attachment
 
@@ -169,12 +169,12 @@ class ScriptEngine:
                 os.remove(target)
                 action = 'ATTDEL'
                 edit_logfile_append(self, pagename, path, rev, action, logname='edit-log',
-                                    comment=u'%(filename)s' % {"filename": filename}, author=author)
-                self.msg += u"%(filename)s removed \n" % {"filename": filename}
+                                    comment='%(filename)s' % {"filename": filename}, author=author)
+                self.msg += "%(filename)s removed \n" % {"filename": filename}
             else:
-                self.msg += u"%(filename)s does not exist \n" % {"filename": filename}
+                self.msg += "%(filename)s does not exist \n" % {"filename": filename}
         else:
-            self.msg += u"action delete attachment: not enough rights - nothing done \n"
+            self.msg += "action delete attachment: not enough rights - nothing done \n"
 
     def do_print(self, *param):
         """ Prints the parameters into output of the script. """
@@ -286,7 +286,7 @@ class ScriptEngine:
 
         self.msg += package.msg
 
-    def do_addrevision(self, filename, pagename, author=u"Scripting Subsystem", comment=u"", trivial=u"No"):
+    def do_addrevision(self, filename, pagename, author="Scripting Subsystem", comment="", trivial="No"):
         """ Adds a revision to a page.
 
         @param filename: name of the file in this package
@@ -304,11 +304,11 @@ class ScriptEngine:
             except PageEditor.Unchanged:
                 pass
             else:
-                self.msg += u"%(pagename)s added \n" % {"pagename": pagename}
+                self.msg += "%(pagename)s added \n" % {"pagename": pagename}
         else:
-            self.msg += u"action add revision: not enough rights - nothing done \n"
+            self.msg += "action add revision: not enough rights - nothing done \n"
 
-    def do_renamepage(self, pagename, newpagename, author=u"Scripting Subsystem", comment=u"Renamed by the scripting subsystem."):
+    def do_renamepage(self, pagename, newpagename, author="Scripting Subsystem", comment="Renamed by the scripting subsystem."):
         """ Renames a page.
 
         @param pagename: name of the target page
@@ -322,12 +322,12 @@ class ScriptEngine:
             if not page.exists():
                 raise RuntimeScriptException(_("The page %s does not exist.") % pagename)
             newpage = PageEditor(self.request, newpagename)
-            page.renamePage(newpage.page_name, comment=u"Renamed from '%s'" % (pagename))
-            self.msg += u'%(pagename)s renamed to %(newpagename)s\n' % {
+            page.renamePage(newpage.page_name, comment="Renamed from '%s'" % (pagename))
+            self.msg += '%(pagename)s renamed to %(newpagename)s\n' % {
                             "pagename": pagename,
                             "newpagename": newpagename}
         else:
-            self.msg += u"action rename page: not enough rights - nothing done \n"
+            self.msg += "action rename page: not enough rights - nothing done \n"
 
     def do_deletepage(self, pagename, comment="Deleted by the scripting subsystem."):
         """ Marks a page as deleted (like the DeletePage action).
@@ -342,9 +342,9 @@ class ScriptEngine:
                 raise RuntimeScriptException(_("The page %s does not exist.") % pagename)
             page.deletePage(comment)
         else:
-            self.msg += u"action delete page: not enough rights - nothing done \n"
+            self.msg += "action delete page: not enough rights - nothing done \n"
 
-    def do_replaceunderlayattachment(self, zipname, filename, pagename, author=u"Scripting Subsystem", comment=u""):
+    def do_replaceunderlayattachment(self, zipname, filename, pagename, author="Scripting Subsystem", comment=""):
         """
         overwrite underlay attachments
 
@@ -364,9 +364,9 @@ class ScriptEngine:
             target = os.path.join(attachments, filename)
             self._extractToFile(zipname, target)
             if os.path.exists(target):
-                filesys.chmod(target, 0666 & config.umask)
+                filesys.chmod(target, 0o0666 & config.umask)
         else:
-            self.msg += u"action replace underlay attachment: not enough rights - nothing done \n"
+            self.msg += "action replace underlay attachment: not enough rights - nothing done \n"
 
     def do_replaceunderlay(self, filename, pagename):
         """
@@ -430,13 +430,13 @@ class ScriptEngine:
                 continue
             try:
                 if fnname in self.request.cfg.packagepages_actions_excluded:
-                    self.msg += u"action package %s: excluded \n" % elements[0].strip()
+                    self.msg += "action package %s: excluded \n" % elements[0].strip()
                     success = False
                     continue
                 else:
                     fn = getattr(self, "do_" + fnname)
             except AttributeError:
-                self.msg += u"Exception RuntimeScriptException: %s\n" % (
+                self.msg += "Exception RuntimeScriptException: %s\n" % (
                         _("Unknown function %(func)s in line %(lineno)i.") %
                         {'func': elements[0], 'lineno': lineno}, )
                 success = False
@@ -446,13 +446,13 @@ class ScriptEngine:
                 fn(*elements[1:])
             except ScriptExit:
                 break
-            except TypeError, e:
-                self.msg += u"Exception %s (line %i): %s\n" % (e.__class__.__name__, lineno, unicode(e))
+            except TypeError as e:
+                self.msg += "Exception %s (line %i): %s\n" % (e.__class__.__name__, lineno, str(e))
                 success = False
                 break
-            except RuntimeScriptException, e:
+            except RuntimeScriptException as e:
                 if not self.ignoreExceptions:
-                    self.msg += u"Exception %s (line %i): %s\n" % (e.__class__.__name__, lineno, unicode(e))
+                    self.msg += "Exception %s (line %i): %s\n" % (e.__class__.__name__, lineno, str(e))
                     success = False
                     break
 
@@ -478,7 +478,7 @@ class Package:
 
     def getScript(self):
         """ Returns the script. """
-        return self.extract_file(MOIN_PACKAGE_FILE).decode("utf-8").replace(u"\ufeff", "")
+        return self.extract_file(MOIN_PACKAGE_FILE).decode("utf-8").replace("\ufeff", "")
 
     def extract_file(self, filename):
         """ Returns the contents of a file in the package. """
@@ -530,7 +530,7 @@ class ZipPackage(Package, ScriptEngine):
 def main():
     args = sys.argv
     if len(args)-1 not in (2, 3) or args[1] not in ('l', 'i'):
-        print >> sys.stderr, """MoinMoin Package Installer v%(version)i
+        print("""MoinMoin Package Installer v%(version)i
 
 %(myname)s action packagefile [request URL]
 
@@ -543,7 +543,7 @@ Example:
 
 %(myname)s i ../package.zip
 
-""" % {"version": MAX_VERSION, "myname": os.path.basename(args[0])}
+""" % {"version": MAX_VERSION, "myname": os.path.basename(args[0])}, file=sys.stderr)
         raise SystemExit
 
     packagefile = args[2]
@@ -558,18 +558,18 @@ Example:
 
     package = ZipPackage(request, packagefile)
     if not package.isPackage():
-        print "The specified file %s is not a package." % packagefile
+        print("The specified file %s is not a package." % packagefile)
         raise SystemExit
 
     if args[1] == 'l':
-        print package.getScript()
+        print(package.getScript())
     elif args[1] == 'i':
         if package.installPackage():
-            print "Installation was successful!"
+            print("Installation was successful!")
         else:
-            print "Installation failed."
+            print("Installation failed.")
         if package.msg:
-            print package.msg
+            print(package.msg)
 
 if __name__ == '__main__':
     main()

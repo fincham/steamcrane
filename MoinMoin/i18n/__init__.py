@@ -26,7 +26,7 @@
 """
 
 import os, gettext, glob
-from StringIO import StringIO
+from io import StringIO, BytesIO
 
 from MoinMoin import log
 logging = log.getLogger(__name__)
@@ -81,15 +81,15 @@ def i18n_init(request):
             for lang_file in glob.glob(po_filename(request, language='*', domain='MoinMoin')): # XXX only MoinMoin domain for now
                 language, domain, ext = os.path.basename(lang_file).split('.')
                 t = Translation(language, domain)
-                f = file(lang_file)
+                f = open(lang_file, "rb")
                 t.load_po(f)
                 f.close()
                 logging.debug("loading translation %r" % language)
                 encoding = 'utf-8'
                 _languages[language] = {}
-                for key, value in t.info.items():
+                for key, value in list(t.info.items()):
                     #logging.debug("meta key %s value %r" % (key, value))
-                    _languages[language][key] = value.decode(encoding)
+                    _languages[language][key] = value # .decode(encoding)
                 for pagename in strings.all_pages:
                     try:
                         pagename_translated = t.translation._catalog[pagename]
@@ -130,13 +130,13 @@ def bot_translations(request):
     for lang_file in glob.glob(po_filename(request, i18n_dir=po_dir, language='*', domain='JabberBot')):
         language, domain, ext = os.path.basename(lang_file).split('.')
         t = Translation(language, domain)
-        f = file(lang_file)
+        f = open(lang_file, "rb")
         t.load_po(f)
         f.close()
         t.loadLanguage(request, trans_dir=po_dir)
         translations[language] = {}
 
-        for key, text in t.raw.items():
+        for key, text in list(t.raw.items()):
             translations[language][key] = text
 
     return translations
@@ -159,7 +159,7 @@ class Translation(object):
         mf = MsgFmt()
         mf.read_po(f.readlines())
         mo_data = mf.generate_mo()
-        f = StringIO(mo_data)
+        f = BytesIO(mo_data)
         self.load_mo(f)
         f.close()
 
@@ -173,11 +173,11 @@ class Translation(object):
             self.ename = info['x-language-in-english']
             self.direction = info['x-direction']
             self.maintainer = info['last-translator']
-        except KeyError, err:
+        except KeyError as err:
             logging.warning("metadata problem in %r: %s" % (self.language, str(err)))
         try:
             assert self.direction in ('ltr', 'rtl', )
-        except (AttributeError, AssertionError), err:
+        except (AttributeError, AssertionError) as err:
             logging.warning("direction problem in %r: %s" % (self.language, str(err)))
 
     def formatMarkup(self, request, text, percent):
@@ -236,7 +236,7 @@ class Translation(object):
 
         if needsupdate:
             logging.debug("langfilename %s needs update" % langfilename)
-            f = file(langfilename)
+            f = open(langfilename, "rb")
             self.load_po(f)
             f.close()
             trans = self.translation
@@ -275,8 +275,8 @@ def getText(original, request, lang, **kw):
     """
     formatted = kw.get('wiki', False) # 1.6 and early 1.7 (until 2/2008) used 'formatted' with True as default!
     percent = kw.get('percent', False)
-    if original == u"":
-        return u"" # we don't want to get *.po files metadata!
+    if original == "":
+        return "" # we don't want to get *.po files metadata!
 
     global translations
     if not lang in translations: # load translation if needed
@@ -298,7 +298,7 @@ def getText(original, request, lang, **kw):
                 translated = translation.formatted[key]
                 if translated is None:
                     logging.error("formatting a %r text that is already being formatted: %r" % (lang, original))
-                    translated = original + u'*' # get some error indication to the UI
+                    translated = original + '*' # get some error indication to the UI
             else:
                 translation.formatted[key] = None # we use this as "formatting in progress" indicator
                 translated = translation.formatMarkup(request, translated, percent)

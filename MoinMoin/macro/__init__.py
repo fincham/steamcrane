@@ -39,7 +39,7 @@ names = ["TitleSearch", "WordIndex", "TitleIndex", "GoTo",
 def getNames(cfg):
     if not hasattr(cfg.cache, 'macro_names'):
         lnames = names[:]
-        lnames.extend(i18n.wikiLanguages().keys())
+        lnames.extend(list(i18n.wikiLanguages().keys()))
         lnames.extend(wikiutil.getPlugins('macro', cfg))
         cfg.cache.macro_names = lnames # remember it
     return cfg.cache.macro_names
@@ -127,7 +127,7 @@ class Macro:
                     raise ImportError("Cannot load macro %s" % macro_name)
         try:
             return execute(self, args)
-        except Exception, err:
+        except Exception as err:
             # we do not want that a faulty macro aborts rendering of the page
             # and makes the wiki UI unusable (by emitting a Server Error),
             # thus, in case of exceptions, we just log the problem and return
@@ -173,12 +173,12 @@ class Macro:
         from MoinMoin.macro.FullSearch import search_box
         return search_box("titlesearch", self)
 
-    def macro_TemplateList(self, needle=u'.+'):
+    def macro_TemplateList(self, needle='.+'):
         # TODO: this should be renamed (RegExPageNameList?), it does not list only Templates...
         _ = self._
         try:
             needle_re = re.compile(needle, re.IGNORECASE)
-        except re.error, err:
+        except re.error as err:
             raise ValueError("Error in regex %r: %s" % (needle, err))
 
         # Get page list readable by current user, filtered by needle
@@ -196,7 +196,7 @@ class Macro:
         result.append(self.formatter.bullet_list(0))
         return ''.join(result)
 
-    def _make_index(self, word_re=u'.+'):
+    def _make_index(self, word_re='.+'):
         """ make an index page (used for TitleIndex and WordIndex macro)
 
             word_re is a regex used for splitting a pagename into fragments
@@ -279,7 +279,7 @@ class Macro:
 
         output = [fmt.paragraph(1), _make_index_key(index_letters), fmt.linebreak(0),
                   fmt.url(1, allpages_url), fmt.text(allpages_txt), fmt.url(0), fmt.paragraph(0)] + output
-        return u''.join(output)
+        return ''.join(output)
 
 
     def macro_TitleIndex(self):
@@ -288,7 +288,7 @@ class Macro:
     def macro_WordIndex(self):
         if self.request.isSpiderAgent: # reduce bot cpu usage
             return ''
-        word_re = u'[%s][%s]+' % (config.chars_upper, config.chars_lower)
+        word_re = '[%s][%s]+' % (config.chars_upper, config.chars_lower)
         return self._make_index(word_re=word_re)
 
     def macro_GoTo(self):
@@ -299,18 +299,18 @@ class Macro:
         """
         _ = self._
         html = [
-            u'<form method="get" action="%s"><div>' % self.request.href(self.formatter.page.page_name),
-            u'<div>',
-            u'<input type="hidden" name="action" value="goto">',
-            u'<input type="text" name="target" size="30">',
-            u'<input type="submit" value="%s">' % _("Go To Page"),
-            u'</div>',
-            u'</form>',
+            '<form method="get" action="%s"><div>' % self.request.href(self.formatter.page.page_name),
+            '<div>',
+            '<input type="hidden" name="action" value="goto">',
+            '<input type="text" name="target" size="30">',
+            '<input type="submit" value="%s">' % _("Go To Page"),
+            '</div>',
+            '</form>',
             ]
-        html = u'\n'.join(html)
+        html = '\n'.join(html)
         return self.formatter.rawHTML(html)
 
-    def macro_Icon(self, icon=u''):
+    def macro_Icon(self, icon=''):
         # empty icon name isn't valid either
         if not icon:
             raise ValueError("You need to give a non-empty icon name")
@@ -337,7 +337,7 @@ class Macro:
                         if sign == '-':
                             tzoffset = -tzoffset
                 tm = (year, month, day, hour, minute, second, 0, 0, 0)
-            except ValueError, err:
+            except ValueError as err:
                 raise ValueError("Bad timestamp %r: %s" % (args, err))
             # as mktime wants a localtime argument (but we only have UTC),
             # we adjust by our local timezone's offset
@@ -349,7 +349,7 @@ class Macro:
             # try raw seconds since epoch in UTC
             try:
                 tm = float(args)
-            except ValueError, err:
+            except ValueError as err:
                 raise ValueError("Bad timestamp %r: %s" % (args, err))
         return format_date(tm)
 
@@ -360,10 +360,10 @@ class Macro:
         return self.__get_Date(stamp, self.request.user.getFormattedDateTime)
 
     def macro_Anchor(self, anchor=None):
-        anchor = wikiutil.get_unicode(self.request, anchor, 'anchor', u'anchor')
+        anchor = wikiutil.get_unicode(self.request, anchor, 'anchor', 'anchor')
         return self.formatter.anchordef(anchor)
 
-    def macro_MailTo(self, email=unicode, text=u''):
+    def macro_MailTo(self, email=str, text=''):
         if not email:
             raise ValueError("You need to give an (obfuscated) email address")
 

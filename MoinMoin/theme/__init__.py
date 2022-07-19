@@ -6,7 +6,7 @@
     @license: GNU GPL, see COPYING for details.
 """
 
-import StringIO
+import io
 
 from MoinMoin import log
 logging = log.getLogger(__name__)
@@ -197,11 +197,11 @@ class ThemeBase:
         @rtype: unicode
         @return: logo html
         """
-        html = u''
+        html = ''
         if self.cfg.logo_string:
             page = wikiutil.getFrontPage(self.request)
             logo = page.link_to_raw(self.request, self.cfg.logo_string)
-            html = u'''<div id="logo">%s</div>''' % logo
+            html = '''<div id="logo">%s</div>''' % logo
         return html
 
     def interwiki(self, d):
@@ -213,11 +213,11 @@ class ThemeBase:
         """
         if self.request.cfg.show_interwiki:
             page = wikiutil.getFrontPage(self.request)
-            text = self.request.cfg.interwikiname or u'Self'
+            text = self.request.cfg.interwikiname or 'Self'
             link = page.link_to(self.request, text=text, rel='nofollow')
-            html = u'<div id="interwiki"><span>%s</span></div>' % link
+            html = '<div id="interwiki"><span>%s</span></div>' % link
         else:
-            html = u''
+            html = ''
         return html
 
     def backlink(self, page, page_name, link_text):
@@ -296,11 +296,11 @@ class ThemeBase:
                     content.append(Page(self.request,
                                         curpage).link_to(self.request, s))
                     curpage += '/'
-                path_html = u'<span class="sep">/</span>'.join(content)
-                html = u'<span class="pagepath">%s</span><span class="sep">/</span>%s' % (path_html, link)
+                path_html = '<span class="sep">/</span>'.join(content)
+                html = '<span class="pagepath">%s</span><span class="sep">/</span>%s' % (path_html, link)
         else:
             html = wikiutil.escape(d['title_text'])
-        return u'<span id="pagelocation">%s</span>' % html
+        return '<span id="pagelocation">%s</span>' % html
 
     def username(self, d):
         """ Assemble the username / userprefs link
@@ -345,8 +345,8 @@ class ThemeBase:
                 userlinks.append(d['page'].link_to(request, text=_("Login"),
                                                    querystr=query, id='login', rel='nofollow'))
 
-        userlinks = [u'<li>%s</li>' % link for link in userlinks]
-        html = u'<ul id="username">%s</ul>' % ''.join(userlinks)
+        userlinks = ['<li>%s</li>' % link for link in userlinks]
+        html = '<ul id="username">%s</ul>' % ''.join(userlinks)
         return html
 
     def splitNavilink(self, text, localize=1):
@@ -450,7 +450,7 @@ class ThemeBase:
             # If it's not enough, replace the middle with '...'
             if len(name) > maxLength:
                 half, left = divmod(maxLength - 3, 2)
-                name = u'%s...%s' % (name[:half + left], name[-half:])
+                name = '%s...%s' % (name[:half + left], name[-half:])
         return name
 
     def maxPagenameLength(self):
@@ -467,7 +467,7 @@ class ThemeBase:
         request = self.request
         found = {} # pages we found. prevent duplicates
         items = [] # navibar items
-        item = u'<li class="%s">%s</li>'
+        item = '<li class="%s">%s</li>'
         current = d['page_name']
 
         # Process config navi_bar
@@ -522,8 +522,8 @@ class ThemeBase:
                         items.append(item % (cls, link))
 
         # Assemble html
-        items = u''.join(items)
-        html = u'''
+        items = ''.join(items)
+        html = '''
 <ul id="navibar">
 %s
 </ul>
@@ -548,7 +548,7 @@ class ThemeBase:
             # cache in class for next calls.
             if not getattr(self.__class__, 'iconsByFile', None):
                 d = {}
-                for data in self.icons.values():
+                for data in list(self.icons.values()):
                     d[data[1]] = data
                 self.__class__.iconsByFile = d
 
@@ -576,10 +576,10 @@ class ThemeBase:
         alt, img, w, h = self.get_icon(icon)
         try:
             alt = vars['icon-alt-text'] # if it is possible we take the alt-text from 'page_icons_table'
-        except KeyError, err:
+        except KeyError as err:
             try:
                 alt = alt % vars # if not we just leave the  alt-text from 'icons'
-            except KeyError, err:
+            except KeyError as err:
                 alt = 'KeyError: %s' % str(err)
         alt = self.request.getText(alt)
         tag = self.request.formatter.image(src=img, alt=alt, width=w, height=h, **kw)
@@ -605,7 +605,7 @@ class ThemeBase:
             qs['rev'] = str(rev)
         attrs = {'rel': 'nofollow', 'title': d['i18ntitle'], }
         page = d[pagekey]
-        if isinstance(page, unicode):
+        if isinstance(page, str):
             # e.g. d['page_parent_page'] is just the unicode pagename
             # while d['page'] will give a page object
             page = Page(self.request, page)
@@ -623,24 +623,24 @@ class ThemeBase:
         _ = self.request.getText
         msgs = d['msg']
 
-        result = u""
+        result = ""
         close = d['page'].link_to(self.request, text=_('Clear message'), css_class="clear-link")
         for msg, msg_class in msgs:
             try:
-                result += u'<p>%s</p>' % msg.render()
+                result += '<p>%s</p>' % msg.render()
                 close = ''
             except AttributeError:
                 if msg and msg_class:
-                    result += u'<p><div class="%s">%s</div></p>' % (msg_class, msg)
+                    result += '<p><div class="%s">%s</div></p>' % (msg_class, msg)
                 elif msg:
-                    result += u'<p>%s</p>\n' % msg
+                    result += '<p>%s</p>\n' % msg
         if result:
             html = result + close
-            return u'<div id="message">\n%s\n</div>\n' % html
+            return '<div id="message">\n%s\n</div>\n' % html
         else:
-            return u''
+            return ''
 
-        return u'<div id="message">\n%s\n</div>\n' % html
+        return '<div id="message">\n%s\n</div>\n' % html
 
     def trail(self, d):
         """ Assemble page trail
@@ -751,9 +751,9 @@ class ThemeBase:
             # These  actions show the  page content.
             # TODO: on new action, page info will not show.
             # A better solution will be if the action itself answer the question: showPageInfo().
-            contentActions = [u'', u'show', u'refresh', u'preview', u'diff',
-                              u'subscribe', u'RenamePage', u'CopyPage', u'DeletePage',
-                              u'SpellCheck', u'print']
+            contentActions = ['', 'show', 'refresh', 'preview', 'diff',
+                              'subscribe', 'RenamePage', 'CopyPage', 'DeletePage',
+                              'SpellCheck', 'print']
             return self.request.action in contentActions
         return False
 
@@ -806,7 +806,7 @@ class ThemeBase:
             }
         d.update(updates)
 
-        html = u'''
+        html = '''
 <form id="searchform" method="get" action="%(url)s">
 <div>
 <input type="hidden" name="action" value="fullsearch">
@@ -843,7 +843,7 @@ searchBlur(e);
         """
         html = ''
         if self.cfg.show_version and not keywords.get('print_mode', 0):
-            html = (u'<div id="version">MoinMoin Release %s [Revision %s], '
+            html = ('<div id="version">MoinMoin Release %s [Revision %s], '
                      'Copyright by Juergen Hermann et al.</div>') % (version.release, version.revision, )
         return html
 
@@ -856,10 +856,10 @@ searchBlur(e);
         """
         # Don't add script for print view
         if self.request.action == 'print':
-            return u''
+            return ''
 
         _ = self.request.getText
-        script = u"""
+        script = """
 <script type="text/javascript">
 <!--
 var search_hint = "%(search_hint)s";
@@ -879,8 +879,8 @@ var search_hint = "%(search_hint)s";
         """
         if not rss_supported:
             return False
-        return page.page_name in [u'RecentChanges',
-            self.request.getText(u'RecentChanges'),
+        return page.page_name in ['RecentChanges',
+            self.request.getText('RecentChanges'),
             self.request.cfg.page_front_page,
             self.request.getText(self.request.cfg.page_front_page)]
 
@@ -904,16 +904,16 @@ var search_hint = "%(search_hint)s";
         @rtype: unicode
         @return: html head
         """
-        link = u''
+        link = ''
         page = d['page']
         if self.shouldUseRSS(page):
-            link = (u'<link rel="alternate" title="%s Recent Changes" '
-                    u'href="%s" type="application/rss+xml">') % (
+            link = ('<link rel="alternate" title="%s Recent Changes" '
+                    'href="%s" type="application/rss+xml">') % (
                         wikiutil.escape(self.cfg.sitename, True),
                         wikiutil.escape(self.rsshref(page), True) )
         elif rss_supported and self.cfg.rss_show_page_history_link:
-            link = (u'<link rel="alternate" title="%s: %s" '
-                    u'href="%s" type="application/rss+xml">') % (
+            link = ('<link rel="alternate" title="%s: %s" '
+                    'href="%s" type="application/rss+xml">') % (
                         wikiutil.escape(self.cfg.sitename, True),
                         wikiutil.escape(page.page_name, True),
                         wikiutil.escape(page.url(self.request, querystr={
@@ -930,7 +930,7 @@ var search_hint = "%(search_hint)s";
         @return: html head
         """
         html = [
-            u'<title>%(title)s - %(sitename)s</title>' % {
+            '<title>%(title)s - %(sitename)s</title>' % {
                 'title': wikiutil.escape(d['title']),
                 'sitename': wikiutil.escape(d['sitename']),
             },
@@ -958,10 +958,10 @@ var search_hint = "%(search_hint)s";
             return ""
         _ = self.request.getText
         querystr = {'action': 'edit'}
-        text = _(u'Edit')
+        text = _('Edit')
         url = page.url(self.request, querystr=querystr, escape=0)
-        return (u'<link rel="alternate" type="application/wiki" '
-                u'title="%s" href="%s">' % (text, url))
+        return ('<link rel="alternate" type="application/wiki" '
+                'title="%s" href="%s">' % (text, url))
 
     def credits(self, d, **keywords):
         """ Create credits html from credits list """
@@ -1169,7 +1169,7 @@ actionsMenuInit('%(label)s');
                         items.append('<li class="toggleCommentsButton" style="display:none;">%s</li>' % item)
                     else:
                         items.append('<li>%s</li>' % item)
-            html = u'<ul class="editbar">%s</ul>\n' % ''.join(items)
+            html = '<ul class="editbar">%s</ul>\n' % ''.join(items)
             self._cache['editbar'] = html
 
         return html
@@ -1194,8 +1194,8 @@ actionsMenuInit('%(label)s');
             action = self.request.action
             # Do not show editbar on edit but on save/cancel
             return not (action == 'edit' and
-                        not form.has_key('button_save') and
-                        not form.has_key('button_cancel'))
+                        'button_save' not in form and
+                        'button_cancel' not in form)
         return False
 
     def editbarItems(self, page):
@@ -1393,7 +1393,7 @@ var gui_editor_link_text = "%(text)s";
         @rtype: unicode
         @return: page div with language and direction attribtues
         """
-        return u'<div id="page"%s>\n' % self.content_lang_attr()
+        return '<div id="page"%s>\n' % self.content_lang_attr()
 
     def endPage(self):
         """ End page div
@@ -1512,11 +1512,11 @@ var gui_editor_link_text = "%(text)s";
         page = d['page']
         if self.shouldUseRSS(page):
             link = [
-                u'<div class="rcrss">',
+                '<div class="rcrss">',
                 self.request.formatter.url(1, self.rsshref(page)),
                 self.request.formatter.rawHTML(self.make_icon("rss")),
                 self.request.formatter.url(0),
-                u'</div>',
+                '</div>',
                 ]
             html += ''.join(link)
         html += '<p>'
@@ -1621,7 +1621,7 @@ var gui_editor_link_text = "%(text)s";
         _ = request.getText
         rev = request.rev
 
-        if keywords.has_key('page'):
+        if 'page' in keywords:
             page = keywords['page']
             pagename = page.page_name
         else:
@@ -1767,7 +1767,7 @@ var gui_editor_link_text = "%(text)s";
 
         # start the <body>
         bodyattr = []
-        if keywords.has_key('body_attr'):
+        if 'body_attr' in keywords:
             bodyattr.append(' ')
             bodyattr.append(keywords['body_attr'])
 
@@ -1898,18 +1898,18 @@ var gui_editor_link_text = "%(text)s";
         """
 
         # Check which page to display, return nothing if doesn't exist.
-        sidebar = self.request.getPragma('sidebar', u'SideBar')
+        sidebar = self.request.getPragma('sidebar', 'SideBar')
         page = Page(self.request, sidebar)
         if not page.exists():
-            return u""
+            return ""
         # Capture the page's generated HTML in a buffer.
-        buffer = StringIO.StringIO()
+        buffer = io.StringIO()
         self.request.redirect(buffer)
         try:
             page.send_page(content_only=1, content_id="sidebar")
         finally:
             self.request.redirect()
-        return u'<div class="sidebar">%s</div>' % buffer.getvalue()
+        return '<div class="sidebar">%s</div>' % buffer.getvalue()
 
 
 class ThemeNotFound(Exception):

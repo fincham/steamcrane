@@ -49,7 +49,7 @@ def _importConfigModule(name):
         mtime = os.path.getmtime(module.__file__)
     except ImportError:
         raise
-    except IndentationError, err:
+    except IndentationError as err:
         logging.exception('Your source code / config file is not correctly indented!')
         msg = """IndentationError: %(err)s
 
@@ -60,7 +60,7 @@ You have to use four spaces at the beginning of the line mostly.
     'err': err,
 }
         raise error.ConfigurationError(msg)
-    except Exception, err:
+    except Exception as err:
         logging.exception('An exception happened.')
         msg = '%s: %s' % (err.__class__.__name__, str(err))
         raise error.ConfigurationError(msg)
@@ -80,7 +80,7 @@ def _url_re_list():
     if _url_re_cache is None:
         try:
             farmconfig, _farmconfig_mtime = _importConfigModule('farmconfig')
-        except ImportError, err:
+        except ImportError as err:
             if 'farmconfig' in str(err):
                 # we failed importing farmconfig
                 logging.debug("could not import farmconfig, mapping all URLs to wikiconfig")
@@ -125,7 +125,7 @@ def _makeConfig(name):
         cfg = configClass(name)
         cfg.cfg_mtime = max(mtime, _farmconfig_mtime)
         logging.info("using wiki config: %s" % os.path.abspath(module.__file__))
-    except ImportError, err:
+    except ImportError as err:
         logging.exception('Could not import.')
         msg = """ImportError: %(err)s
 
@@ -141,7 +141,7 @@ module name does not include the ".py" suffix.
     'err': err,
 }
         raise error.ConfigurationError(msg)
-    except AttributeError, err:
+    except AttributeError as err:
         logging.exception('An exception occurred.')
         msg = """AttributeError: %(err)s
 
@@ -267,10 +267,10 @@ class ConfigFunctionality(object):
         self.cache.page_template_regex = re.compile(self.page_template_regex, re.UNICODE)
 
         # the ..._regexact versions only match if nothing is left (exact match)
-        self.cache.page_category_regexact = re.compile(u'^%s$' % self.page_category_regex, re.UNICODE)
-        self.cache.page_dict_regexact = re.compile(u'^%s$' % self.page_dict_regex, re.UNICODE)
-        self.cache.page_group_regexact = re.compile(u'^%s$' % self.page_group_regex, re.UNICODE)
-        self.cache.page_template_regexact = re.compile(u'^%s$' % self.page_template_regex, re.UNICODE)
+        self.cache.page_category_regexact = re.compile('^%s$' % self.page_category_regex, re.UNICODE)
+        self.cache.page_dict_regexact = re.compile('^%s$' % self.page_dict_regex, re.UNICODE)
+        self.cache.page_group_regexact = re.compile('^%s$' % self.page_group_regex, re.UNICODE)
+        self.cache.page_template_regexact = re.compile('^%s$' % self.page_template_regex, re.UNICODE)
 
         self.cache.ua_spiders = self.ua_spiders and re.compile(self.ua_spiders, re.IGNORECASE)
 
@@ -367,7 +367,7 @@ class ConfigFunctionality(object):
         if self.xapian_search:
             try:
                 import xapian
-            except ImportError, err:
+            except ImportError as err:
                 self.xapian_search = False
                 logging.error("xapian_search was auto-disabled because python-xapian is not installed [%s]." % str(err))
 
@@ -383,7 +383,7 @@ class ConfigFunctionality(object):
 
         # if we are to use the jabber bot, instantiate a server object for future use
         if self.jabber_enabled:
-            from xmlrpclib import Server
+            from xmlrpc.client import Server
             self.notification_server = Server(self.notification_bot_uri, )
 
         # Cache variables for the properties below
@@ -439,11 +439,11 @@ class ConfigFunctionality(object):
         if self.passlib_support:
             try:
                 from passlib.context import CryptContext
-            except ImportError, err:
+            except ImportError as err:
                 raise error.ConfigurationError("Wiki is configured to use passlib, but importing passlib failed [%s]!" % str(err))
             try:
                 self.cache.pwd_context = CryptContext(**self.passlib_crypt_context)
-            except (ValueError, KeyError, TypeError, UserWarning), err:
+            except (ValueError, KeyError, TypeError, UserWarning) as err:
                 # ValueError: wrong configuration values
                 # KeyError: unsupported hash (seen with passlib 1.3)
                 # TypeError: configuration value has wrong type
@@ -460,7 +460,7 @@ class ConfigFunctionality(object):
         secret = ''
         for varname in varnames:
             var = getattr(self, varname, None)
-            if isinstance(var, (str, unicode)):
+            if isinstance(var, str):
                 secret += repr(var)
         return secret
 
@@ -539,57 +539,9 @@ configuration for typos before requesting support or reporting a bug.
             raise error.ConfigurationError(msg)
 
     def _decode(self):
-        """ Try to decode certain names, ignore unicode values
-
-        Try to decode str using utf-8. If the decode fail, raise FatalError.
-
-        Certain config variables should contain unicode values, and
-        should be defined with u'text' syntax. Python decode these if
-        the file have a 'coding' line.
-
-        This will allow utf-8 users to use simple strings using, without
-        using u'string'. Other users will have to use u'string' for
-        these names, because we don't know what is the charset of the
-        config files.
+        """ No longer needed as all strings can contain whatever encoding.
         """
-        charset = 'utf-8'
-        message = u"""
-"%(name)s" configuration variable is a string, but should be
-unicode. Use %(name)s = u"value" syntax for unicode variables.
-
-Also check your "-*- coding -*-" line at the top of your configuration
-file. It should match the actual charset of the configuration file.
-"""
-
-        decode_names = (
-            'sitename', 'interwikiname', 'user_homewiki', 'logo_string', 'navi_bar',
-            'page_front_page', 'page_category_regex', 'page_dict_regex',
-            'page_group_regex', 'page_template_regex', 'page_license_page',
-            'page_local_spelling_words', 'acl_rights_default',
-            'acl_rights_before', 'acl_rights_after', 'mail_from',
-            'quicklinks_default', 'subscribed_pages_default',
-            )
-
-        for name in decode_names:
-            attr = getattr(self, name, None)
-            if attr:
-                # Try to decode strings
-                if isinstance(attr, str):
-                    try:
-                        setattr(self, name, unicode(attr, charset))
-                    except UnicodeError:
-                        raise error.ConfigurationError(message %
-                                                       {'name': name})
-                # Look into lists and try to decode strings inside them
-                elif isinstance(attr, list):
-                    for i in xrange(len(attr)):
-                        item = attr[i]
-                        if isinstance(item, str):
-                            try:
-                                attr[i] = unicode(item, charset)
-                            except UnicodeError:
-                                raise error.ConfigurationError(message %
-                                                               {'name': name})
+        pass
 
     def _check_directories(self):
         """ Make sure directories are accessible
@@ -641,7 +593,7 @@ also the spelling of the directory name.
             imp.acquire_lock()
             try:
                 for pdir in plugin_dirs:
-                    csum = 'p_%s' % hashlib.new('sha1', pdir).hexdigest()
+                    csum = 'p_%s' % hashlib.new('sha1', pdir.encode("utf-8")).hexdigest()
                     modname = '%s.%s' % (self.siteid, csum)
                     # If the module is not loaded, try to load it
                     if not modname in sys.modules:
@@ -661,7 +613,7 @@ also the spelling of the directory name.
                         self._plugin_modules.append(modname)
             finally:
                 imp.release_lock()
-        except ImportError, err:
+        except ImportError as err:
             msg = """
 Could not import plugin package "%(path)s" because of ImportError:
 %(err)s.
@@ -681,7 +633,7 @@ that the data/plugin directory has an __init__.py file.
         them from this base class.
         """
         # user checkbox defaults
-        for key, value in DefaultConfig.user_checkbox_defaults.items():
+        for key, value in list(DefaultConfig.user_checkbox_defaults.items()):
             if key not in self.user_checkbox_defaults:
                 self.user_checkbox_defaults[key] = value
 
@@ -728,8 +680,8 @@ def _default_password_checker(cfg, request, username, password,
        username_lower in password_lower or password_lower in username_lower:
         return _("Password is too easy (password contains name or name contains password).")
 
-    keyboards = (ur"`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./", # US kbd
-                 ur"^1234567890ß´qwertzuiopü+asdfghjklöä#yxcvbnm,.-", # german kbd
+    keyboards = (r"`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./", # US kbd
+                 r"^1234567890ß´qwertzuiopü+asdfghjklöä#yxcvbnm,.-", # german kbd
                 ) # add more keyboards!
     for kbd in keyboards:
         rev_kbd = kbd[::-1]
@@ -908,12 +860,12 @@ options_no_group_name = {
   'style': ('Style / Theme / UI related',
   'These settings control how the wiki user interface will look like.',
   (
-    ('sitename', u'Untitled Wiki',
+    ('sitename', 'Untitled Wiki',
      "Short description of your wiki site, displayed below the logo on each page, and used in RSS documents as the channel title [Unicode]"),
     ('interwikiname', None, "unique and stable InterWiki name (prefix, moniker) of the site [Unicode], or None"),
     ('logo_string', None, "The wiki logo top of page, HTML is allowed (`<img>` is possible as well) [Unicode]"),
     ('html_pagetitle', None, "Allows you to set a specific HTML page title (if None, it defaults to the value of `sitename`)"),
-    ('navi_bar', [u'RecentChanges', u'FindPage', u'HelpContents', ],
+    ('navi_bar', ['RecentChanges', 'FindPage', 'HelpContents', ],
      'Most important page names. Users can add more names in their quick links in user preferences. To link to URL, use `u"[[url|link title]]"`, to use a shortened name for long page name, use `u"[[LongLongPageName|title]]"`. [list of Unicode strings]'),
 
     ('theme_default', 'modernized',
@@ -926,9 +878,9 @@ options_no_group_name = {
 
     ('supplementation_page', False,
      "if True, show a link to the supplementation page in the theme"),
-    ('supplementation_page_name', u'Discussion',
+    ('supplementation_page_name', 'Discussion',
      "default name of the supplementation (sub)page [unicode]"),
-    ('supplementation_page_template', u'DiscussionTemplate',
+    ('supplementation_page_template', 'DiscussionTemplate',
      "default template used for creation of the supplementation page [unicode]"),
 
     ('interwiki_preferred', [], "In dialogues, show those wikis at the top of the list."),
@@ -1018,7 +970,7 @@ options_no_group_name = {
     ('editor_force', True, "if True, force using the default editor"),
     ('editor_ui', 'theonepreferred', "Editor choice shown on the user interface, 'freechoice' or 'theonepreferred'"),
     ('page_license_enabled', False, 'if True, show a license hint in page editor.'),
-    ('page_license_page', u'WikiLicense', 'Page linked from the license hint. [Unicode]'),
+    ('page_license_page', 'WikiLicense', 'Page linked from the license hint. [Unicode]'),
     ('edit_locking', 'warn 10', "Editor locking policy: `None`, `'warn <timeout in minutes>'`, or `'lock <timeout in minutes>'`"),
     ('edit_ticketing', True, None),
     ('edit_rows', 20, "Default height of the edit box"),
@@ -1063,23 +1015,23 @@ options_no_group_name = {
   )),
   # ==========================================================================
   'pages': ('Special page names', None, (
-    ('page_front_page', u'LanguageSetup',
+    ('page_front_page', 'LanguageSetup',
      "Name of the front page. We don't expect you to keep the default. Just read LanguageSetup in case you're wondering... [Unicode]"),
 
     # the following regexes should match the complete name when used in free text
     # the group 'all' shall match all, while the group 'key' shall match the key only
     # e.g. CategoryFoo -> group 'all' ==  CategoryFoo, group 'key' == Foo
     # moin's code will add ^ / $ at beginning / end when needed
-    ('page_category_regex', ur'(?P<all>Category(?P<key>(?!Template)\S+))',
+    ('page_category_regex', r'(?P<all>Category(?P<key>(?!Template)\S+))',
      'Pagenames exactly matching this regex are regarded as Wiki categories [Unicode]'),
-    ('page_dict_regex', ur'(?P<all>(?P<key>\S+)Dict)',
+    ('page_dict_regex', r'(?P<all>(?P<key>\S+)Dict)',
      'Pagenames exactly matching this regex are regarded as pages containing variable dictionary definitions [Unicode]'),
-    ('page_group_regex', ur'(?P<all>(?P<key>\S+)Group)',
+    ('page_group_regex', r'(?P<all>(?P<key>\S+)Group)',
      'Pagenames exactly matching this regex are regarded as pages containing group definitions [Unicode]'),
-    ('page_template_regex', ur'(?P<all>(?P<key>\S+)Template)',
+    ('page_template_regex', r'(?P<all>(?P<key>\S+)Template)',
      'Pagenames exactly matching this regex are regarded as pages containing templates for new pages [Unicode]'),
 
-    ('page_local_spelling_words', u'LocalSpellingWords',
+    ('page_local_spelling_words', 'LocalSpellingWords',
      'Name of the page containing user-provided spellchecker words [Unicode]'),
   )),
   # ==========================================================================
@@ -1211,11 +1163,11 @@ options = {
     'ACLs control who may do what, see HelpOnAccessControlLists.',
     (
       ('hierarchic', False, 'True to use hierarchical ACLs'),
-      ('rights_default', u"Trusted:read,write,delete,revert Known:read All:read",
+      ('rights_default', "Trusted:read,write,delete,revert Known:read All:read",
        "ACL used if no ACL is specified on the page"),
-      ('rights_before', u"",
+      ('rights_before', "",
        "ACL that is processed before the on-page/default ACL"),
-      ('rights_after', u"",
+      ('rights_after', "",
        "ACL that is processed after the on-page/default ACL"),
       ('rights_valid', ['read', 'write', 'delete', 'revert', 'admin'],
        "Valid tokens for right sides of ACL entries."),
@@ -1238,7 +1190,7 @@ options = {
       ('jid_unique', True,
        "if True, check Jabber IDs for uniqueness and don't accept duplicates."),
 
-      ('homewiki', u'Self',
+      ('homewiki', 'Self',
        "interwiki name of the wiki where the user home pages are located [Unicode] - useful if you have ''many'' users. You could even link to nonwiki \"user pages\" if the wiki username is in the target URL."),
 
       ('checkbox_fields',
@@ -1339,9 +1291,9 @@ options = {
       ('smarthost', None, "Address of SMTP server to use for sending mail (None = don't use SMTP server)."),
       ('sendmail', None, "sendmail command to use for sending mail (None = don't use sendmail)"),
 
-      ('import_subpage_template', u"$from-$date-$subject", "Create subpages using this template when importing mail."),
+      ('import_subpage_template', "$from-$date-$subject", "Create subpages using this template when importing mail."),
       ('import_pagename_search', ['subject', 'to', ], "Where to look for target pagename specification."),
-      ('import_pagename_envelope', u"%s", "Use this to add some fixed prefix/postfix to the generated target pagename."),
+      ('import_pagename_envelope', "%s", "Use this to add some fixed prefix/postfix to the generated target pagename."),
       ('import_pagename_regex', r'\[\[([^\]]*)\]\]', "Regular expression used to search for target pagename specification."),
       ('import_wiki_addrs', [], "Target mail addresses to consider when importing mail"),
 

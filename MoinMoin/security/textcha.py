@@ -29,7 +29,7 @@ from MoinMoin import log
 logging = log.getLogger(__name__)
 
 from MoinMoin import wikiutil
-from werkzeug.security import safe_str_cmp as safe_str_equal
+from MoinMoin.util import safe_str_equal
 
 SHA1_LEN = 40 # length of hexdigest
 TIMESTAMP_LEN = 10 # length of timestamp
@@ -63,15 +63,15 @@ class TextCha(object):
         textchas = cfg.textchas
         if textchas:
             lang = user.language or request.lang
-            logging.debug(u"TextCha: user.language == '%s'." % lang)
+            logging.debug("TextCha: user.language == '%s'." % lang)
             if lang not in textchas:
                 lang = cfg.language_default
-                logging.debug(u"TextCha: fallback to language_default == '%s'." % lang)
+                logging.debug("TextCha: fallback to language_default == '%s'." % lang)
                 if lang not in textchas:
-                    logging.error(u"TextCha: The textchas do not have content for language_default == '%s'! Falling back to English." % lang)
+                    logging.error("TextCha: The textchas do not have content for language_default == '%s'! Falling back to English." % lang)
                     lang = 'en'
                     if lang not in textchas:
-                        logging.error(u"TextCha: The textchas do not have content for 'en', auto-disabling textchas!")
+                        logging.error("TextCha: The textchas do not have content for 'en', auto-disabling textchas!")
                         cfg.textchas = None
                         lang = None
         else:
@@ -79,11 +79,11 @@ class TextCha(object):
         if lang is None:
             return None
         else:
-            logging.debug(u"TextCha: using lang = '%s'" % lang)
+            logging.debug("TextCha: using lang = '%s'" % lang)
             return textchas[lang]
 
     def _compute_signature(self, question, timestamp):
-        signature = u"%s%d" % (question, timestamp)
+        signature = "%s%d" % (question, timestamp)
         return hmac.new(self.secret, signature.encode('utf-8'), digestmod=hashlib.sha1).hexdigest()
 
     def _init_qa(self, question=None):
@@ -94,7 +94,7 @@ class TextCha(object):
         """
         if self.is_enabled():
             if question is None:
-                self.question = random.choice(self.textchas.keys())
+                self.question = random.choice(list(self.textchas.keys()))
             else:
                 self.question = question
             try:
@@ -102,12 +102,12 @@ class TextCha(object):
                 self.answer_re = re.compile(self.answer_regex, re.U|re.I)
             except KeyError:
                 # this question does not exist, thus there is no answer
-                self.answer_regex = ur"[Never match for cheaters]"
+                self.answer_regex = r"[Never match for cheaters]"
                 self.answer_re = None
-                logging.warning(u"TextCha: Non-existing question '%s'. User '%s' trying to cheat?" % (
+                logging.warning("TextCha: Non-existing question '%s'. User '%s' trying to cheat?" % (
                                 self.question, self.user_info))
             except re.error:
-                logging.error(u"TextCha: Invalid regex in answer for question '%s'" % self.question)
+                logging.error("TextCha: Invalid regex in answer for question '%s'" % self.question)
                 self._init_qa()
 
     def is_enabled(self):
@@ -149,8 +149,8 @@ class TextCha(object):
                 success = False
                 reason = 'TypeError during signature check'
 
-            success_status = success and u"success" or u"failure"
-            logging.info(u"TextCha: %s (u='%s', a='%s', re='%s', q='%s', rsn='%s')" % (
+            success_status = success and "success" or "failure"
+            logging.info("TextCha: %s (u='%s', a='%s', re='%s', q='%s', rsn='%s')" % (
                              success_status,
                              self.user_info,
                              given_answer,
@@ -191,7 +191,7 @@ class TextCha(object):
                 pass
             # there is a space between the timestamp and the question, so take away 1
             question = question[:-TIMESTAMP_LEN - 1]
-        given_answer = form.get('textcha-answer', u'')
+        given_answer = form.get('textcha-answer', '')
         return question, given_answer, timestamp, signature
 
     def render(self, form=None):
@@ -205,7 +205,7 @@ class TextCha(object):
             if question is None:
                 question = self.question
             question_form, given_answer_form = self._make_form_values(question, given_answer)
-            result = u"""
+            result = """
 <div id="textcha">
 <span id="textcha-question">%s</span>
 <input type="hidden" name="textcha-question" value="%s">
@@ -213,7 +213,7 @@ class TextCha(object):
 </div>
 """ % (wikiutil.escape(question), question_form, given_answer_form)
         else:
-            result = u''
+            result = ''
         return result
 
     def check_answer_from_form(self, form=None):

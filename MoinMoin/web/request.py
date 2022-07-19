@@ -6,15 +6,14 @@
     @license: GNU GPL, see COPYING for details.
 """
 
-import re
-from StringIO import StringIO
+import re, warnings
+from io import StringIO
 
 from werkzeug.wrappers import Request as RequestBase
-from werkzeug.wrappers import BaseResponse, ETagResponseMixin, \
-                     CommonResponseDescriptorsMixin, WWWAuthenticateMixin
+from werkzeug.wrappers import Response
 from werkzeug.wrappers import ResponseStream
 from werkzeug.datastructures import EnvironHeaders, Headers, HeaderSet
-from werkzeug.urls import Href, url_encode
+from werkzeug.urls import url_encode, url_join
 from werkzeug.test import create_environ, Client
 from werkzeug.utils import cached_property
 
@@ -22,6 +21,99 @@ from MoinMoin import config
 
 from MoinMoin import log
 logging = log.getLogger(__name__)
+
+class Href:
+    """Implements a callable that constructs URLs with the given base. The
+    function can be called with any number of positional and keyword
+    arguments which than are used to assemble the URL.  Works with URLs
+    and posix paths.
+    Positional arguments are appended as individual segments to
+    the path of the URL:
+    >>> href = Href('/foo')
+    >>> href('bar', 23)
+    '/foo/bar/23'
+    >>> href('foo', bar=23)
+    '/foo/foo?bar=23'
+    If any of the arguments (positional or keyword) evaluates to `None` it
+    will be skipped.  If no keyword arguments are given the last argument
+    can be a :class:`dict` or :class:`MultiDict` (or any other dict subclass),
+    otherwise the keyword arguments are used for the query parameters, cutting
+    off the first trailing underscore of the parameter name:
+    >>> href(is_=42)
+    '/foo?is=42'
+    >>> href({'foo': 'bar'})
+    '/foo?foo=bar'
+    Combining of both methods is not allowed:
+    >>> href({'foo': 'bar'}, bar=42)
+    Traceback (most recent call last):
+      ...
+    TypeError: keyword arguments and query-dicts can't be combined
+    Accessing attributes on the href object creates a new href object with
+    the attribute name as prefix:
+    >>> bar_href = href.bar
+    >>> bar_href("blub")
+    '/foo/bar/blub'
+    If `sort` is set to `True` the items are sorted by `key` or the default
+    sorting algorithm:
+    >>> href = Href("/", sort=True)
+    >>> href(a=1, b=2, c=3)
+    '/?a=1&b=2&c=3'
+    .. deprecated:: 2.0
+        Will be removed in Werkzeug 2.1. Use :mod:`werkzeug.routing`
+        instead.
+    .. versionadded:: 0.5
+        `sort` and `key` were added.
+    """
+
+    def __init__(  # type: ignore
+        self, base="./", charset="utf-8", sort=False, key=None
+    ):
+        warnings.warn(
+            "'Href' is deprecated and will be removed in Werkzeug 2.1."
+            " Use 'werkzeug.routing' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        if not base:
+            base = "./"
+        self.base = base
+        self.charset = charset
+        self.sort = sort
+        self.key = key
+
+    def __getattr__(self, name):  # type: ignore
+        if name[:2] == "__":
+            raise AttributeError(name)
+        base = self.base
+        if base[-1:] != "/":
+            base += "/"
+        return Href(url_join(base, name), self.charset, self.sort, self.key)
+
+    def __call__(self, *path, **query):  # type: ignore
+        if path and isinstance(path[-1], dict):
+            if query:
+                raise TypeError("keyword arguments and query-dicts can't be combined")
+            query, path = path[-1], path[:-1]
+        elif query:
+            query = {k[:-1] if k.endswith("_") else k: v for k, v in query.items()}
+        path = "/".join(
+            [
+                x
+                for x in path
+                if x is not None
+            ]
+        ).lstrip("/")
+        rv = self.base
+        if path:
+            if not rv.endswith("/"):
+                rv += "/"
+            rv = url_join(rv, f"./{path}")
+        if query:
+            rv += "?" + _to_str(
+                url_encode(query, self.charset, sort=self.sort, key=self.key), "ascii"
+            )
+        return rv
 
 class MoinMoinFinish(Exception):
     """ Raised to jump directly to end of run() function, where finish is called """
@@ -37,9 +129,7 @@ class ModifiedResponseStreamMixin(object):
         """The response iterable as write-only stream."""
         return ResponseStream(self)
 
-class ResponseBase(BaseResponse, ETagResponseMixin, ModifiedResponseStreamMixin,
-                   CommonResponseDescriptorsMixin,
-                   WWWAuthenticateMixin):
+class ResponseBase(Response, ModifiedResponseStreamMixin):
     """
     similar to werkzeug.Response, but with ModifiedResponseStreamMixin
     """

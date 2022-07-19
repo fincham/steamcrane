@@ -1,3 +1,5 @@
+venv/
+wiki/data/pages/MissingPage/cache/
 wikiconfig_local.py*
 wikiserverconfig_local.py*
 tests/wiki/

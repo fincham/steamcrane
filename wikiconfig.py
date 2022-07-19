@@ -41,10 +41,10 @@ class LocalConfig(multiconfig.DefaultConfig):
     actions_superuser = multiconfig.DefaultConfig.actions_superuser[:]
     actions_superuser.remove('newaccount')
 
-    acl_rights_default = u"All:read,write,delete,revert,admin"
+    acl_rights_default = "All:read,write,delete,revert,admin"
     surge_action_limits = None # no surge protection
-    sitename = u'MoinMoin DesktopEdition'
-    logo_string = u'<img src="%s/common/moinmoin.png" alt="MoinMoin Logo">' % url_prefix_static
+    sitename = 'MoinMoin DesktopEdition'
+    logo_string = '<img src="%s/common/moinmoin.png" alt="MoinMoin Logo">' % url_prefix_static
     # ^^^ DON'T TOUCH THIS EXCEPT IF YOU KNOW WHAT YOU DO ^^^
 
     #page_front_page = u'FrontPage' # change to some better value
@@ -64,7 +64,7 @@ class LocalConfig(multiconfig.DefaultConfig):
 
 try:
     from wikiconfig_local import Config
-except ImportError, err:
+except ImportError as err:
     if not str(err).endswith('wikiconfig_local'):
         raise
     Config = LocalConfig

@@ -35,8 +35,7 @@ from MoinMoin import log
 logging = log.getLogger(__name__)
 
 from MoinMoin import config, caching, wikiutil, i18n, events
-from werkzeug.security import safe_str_cmp as safe_str_equal
-from MoinMoin.util import timefuncs, random_string
+from MoinMoin.util import safe_str_equal, timefuncs, random_string
 from MoinMoin.wikiutil import url_quote_plus
 
 # for efficient lookup <attr> -> userid, we keep an index of this in the cache.
@@ -211,7 +210,7 @@ def addLowerCaseKeys(cache):
     for attrname in CACHED_USER_ATTRS:
         attr2id = c[attrname]
         attr2id_lower = c[attrname + "_lower"] = {}
-        for key, value in attr2id.iteritems():
+        for key, value in attr2id.items():
             attr2id_lower[key.lower()] = value
     return c
 
@@ -416,8 +415,8 @@ def encodeDict(items):
     @return: dict encoded as unicode
     """
     line = []
-    for key, value in items.items():
-        item = u'%s:%s' % (key, value)
+    for key, value in list(items.items()):
+        item = '%s:%s' % (key, value)
         line.append(item)
     line = '\t'.join(line)
     return line
@@ -516,7 +515,7 @@ class User:
             self.id = getUserId(self._request, self.name)
             if self.id:
                 # no password given should fail
-                self.load_from_id(password or u'')
+                self.load_from_id(password or '')
         # Still no ID - make new user
         if not self.id:
             self.id = self.make_id()
@@ -629,7 +628,7 @@ class User:
                 del user_data[key]
 
         # Copy user data into user object
-        for key, val in user_data.items():
+        for key, val in list(user_data.items()):
             vars(self)[key] = val
 
         self.tz_offset = int(self.tz_offset)
@@ -701,7 +700,7 @@ class User:
                         pwd_context = self._cfg.cache.pwd_context
                         try:
                             password_correct = pwd_context.verify(password, d)
-                        except ValueError, err:
+                        except ValueError as err:
                             # can happen for unknown scheme
                             logging.error('in user profile %r, verifying the passlib pw hash crashed [%s]' % (self.id, str(err)))
                         if password_correct:
@@ -757,7 +756,7 @@ class User:
 
     def persistent_items(self):
         """ items we want to store into the user profile """
-        return [(key, value) for key, value in vars(self).items()
+        return [(key, value) for key, value in list(vars(self).items())
                     if key not in self._cfg.user_transient_fields and key[0] != '_']
 
     def save(self):
@@ -793,7 +792,7 @@ class User:
             elif isinstance(value, dict):
                 key += '{}'
                 value = encodeDict(value)
-            line = u"%s=%s" % (key, unicode(value))
+            line = "%s=%s" % (key, str(value))
             line = line.replace('\n', ' ').replace('\r', ' ') # no lineseps
             data.write(line + '\n')
         data.close()
@@ -854,8 +853,8 @@ class User:
         @param tm: timestamp
         """
         if self.valid:
-            interwikiname = self._cfg.interwikiname or u''
-            bookmark = unicode(tm)
+            interwikiname = self._cfg.interwikiname or ''
+            bookmark = str(tm)
             self.bookmarks[interwikiname] = bookmark
             self.save()
 
@@ -866,7 +865,7 @@ class User:
         @return: bookmark timestamp or None
         """
         bm = None
-        interwikiname = self._cfg.interwikiname or u''
+        interwikiname = self._cfg.interwikiname or ''
         if self.valid:
             try:
                 bm = int(self.bookmarks[interwikiname])
@@ -880,7 +879,7 @@ class User:
         @rtype: int
         @return: 0 on success, 1 on failure
         """
-        interwikiname = self._cfg.interwikiname or u''
+        interwikiname = self._cfg.interwikiname or ''
         if self.valid:
             try:
                 del self.bookmarks[interwikiname]
@@ -1036,7 +1035,7 @@ class User:
         # first remove all old entries mapping to this userid:
         for attrname in CACHED_USER_ATTRS:
             attr2id = cache[attrname]
-            for key, value in attr2id.items():
+            for key, value in list(attr2id.items()):
                 if value == userid:
                     del attr2id[key]
 

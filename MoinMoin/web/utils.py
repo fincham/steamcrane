@@ -10,7 +10,6 @@ import time
 
 from werkzeug.utils import redirect
 from werkzeug.exceptions import abort
-from werkzeug.http import cookie_date
 from werkzeug.wrappers import Response
 
 from MoinMoin import caching
@@ -106,7 +105,7 @@ def check_surge_protect(request, kick=False, action=None, username=None):
                         events = surgedict.setdefault(id, {})
                         timestamps = events.setdefault(action, [])
                         timestamps.append((t, surge_indicator))
-                except StandardError:
+                except Exception:
                     pass
 
         maxnum, dt = limits.get(current_action, default_limit)
@@ -138,13 +137,13 @@ def check_surge_protect(request, kick=False, action=None, username=None):
                     timestamps.append((now + request.cfg.surge_lockout_time, surge_indicator)) # continue like that and get locked out
 
         data = []
-        for id, events in surgedict.items():
-            for action, timestamps in events.items():
+        for id, events in list(surgedict.items()):
+            for action, timestamps in list(events.items()):
                 for t, surge_indicator in timestamps:
                     data.append("%s\t%d\t%s\t%s" % (id, t, action, surge_indicator))
         data = "\n".join(data)
         cache.update(data)
-    except StandardError:
+    except Exception:
         pass
 
     if surge_detected and validuser and request.user.auth_method in request.cfg.auth_methods_trusted:
@@ -240,15 +239,15 @@ class UniqueIDGenerator(object):
         @returns: a unique (relatively to the namespace) ID
         @rtype: unicode
         """
-        if not isinstance(base, unicode):
-            base = unicode(str(base), 'ascii', 'ignore')
+        if not isinstance(base, str):
+            base = str(str(base), 'ascii', 'ignore')
         if not namespace in self.page_ids:
             self.page_ids[namespace] = {}
         count = self.page_ids[namespace].get(base, -1) + 1
         self.page_ids[namespace][base] = count
         if not count:
             return base
-        return u'%s-%d' % (base, count)
+        return '%s-%d' % (base, count)
 
 FATALTMPL = """
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
@@ -262,5 +261,5 @@ FATALTMPL = """
 def fatal_response(error):
     """ Create a response from MoinMoin.error.FatalError instances. """
     html = FATALTMPL % dict(title=error.__class__.__name__,
-                            body=str(error))
+                            body=error)
     return Response(html, status=500, mimetype='text/html')

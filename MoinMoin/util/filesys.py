@@ -7,7 +7,7 @@
     @license: GNU GPL, see COPYING for details.
 """
 
-import sys, os, shutil, time, errno
+import sys, os, shutil, time, errno, functools
 from stat import S_ISDIR, ST_MODE, S_IMODE
 import warnings
 
@@ -30,8 +30,7 @@ def chmod(name, mode, catchexception=True):
             raise
 
 
-from werkzeug.posixemulation import *
-
+from os import replace as rename
 rename_overwrite = rename
 
 def rename_no_overwrite(oldname, newname, delete_old=False):
@@ -102,7 +101,7 @@ def access_denied_decorator(fn):
             while True:
                 try:
                     return fn(*args, **kwargs)
-                except OSError, err:
+                except OSError as err:
                     retry += 1
                     if retry > max_retries:
                         raise
@@ -234,7 +233,7 @@ def copytree(src, dst, symlinks=False):
             else:
                 shutil.copy2(srcname, dstname)
             # XXX What about devices, sockets etc.?
-        except (IOError, os.error), why:
+        except (IOError, os.error) as why:
             errors.append((srcname, dstname, why))
     if errors:
         raise EnvironmentError(str(errors))
@@ -294,19 +293,11 @@ def dcdisable():
     global DCENABLED
     DCENABLED = 0
 
-import dircache
-
+@functools.lru_cache(32)
 def dclistdir(path):
     warnings.warn(dc_deprecated, DeprecationWarning, stacklevel=2)
-    if sys.platform == 'win32' or not DCENABLED:
-        return os.listdir(path)
-    else:
-        return dircache.listdir(path)
+    return os.listdir(path)
 
 def dcreset():
     warnings.warn(dc_deprecated, DeprecationWarning, stacklevel=2)
-    if sys.platform == 'win32' or not DCENABLED:
-        return
-    else:
-        return dircache.reset()
-
+    dclistdir.cache_clear()

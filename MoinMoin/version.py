@@ -39,4 +39,4 @@ if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == "update":
         update()
     else:
-        print project, release, revision
+        print(project, release, revision)

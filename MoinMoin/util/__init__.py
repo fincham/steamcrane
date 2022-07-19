@@ -7,7 +7,7 @@
     @license: GNU GPL, see COPYING for details.
 """
 
-import os, sys, re, random
+import os, sys, re, random, hmac
 
 # do the pickle magic once here, so we can just import from here:
 # cPickle can encode normal and Unicode strings
@@ -125,3 +125,7 @@ def random_string(length, allowed_chars=None):
         return ''.join([chr(random.randint(0, 255)) for dummy in xrange(length)])
 
     return ''.join([random.choice(allowed_chars) for dummy in xrange(length)])
+
+def safe_str_equal(a, b):
+    """ Replacement for the old werkzeug safe_str_equal """
+    return hmac.compare_digest(a,b)

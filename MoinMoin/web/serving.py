@@ -2,7 +2,7 @@
 """
     MoinMoin - This module contains additional code related to serving
                requests with the standalone server. It uses werkzeug's
-               BaseRequestHandler and overrides some functions that
+               WSGIRequestHandler and overrides some functions that
                need to be handled different in MoinMoin than in werkzeug
 
     @copyright: 2008-2008 MoinMoin:FlorianKrupicka
@@ -18,9 +18,9 @@ logging = log.getLogger(__name__)
 import werkzeug._internal
 werkzeug._internal._logger = log.getLogger('werkzeug')
 
-from werkzeug.serving import run_simple, BaseRequestHandler
+from werkzeug.serving import run_simple, WSGIRequestHandler
 
-class RequestHandler(BaseRequestHandler):
+class RequestHandler(WSGIRequestHandler):
     """
     A request-handler for WSGI, that overrides the default logging
     mechanisms to log via MoinMoin's logging framework.

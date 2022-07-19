@@ -28,7 +28,7 @@
 """
 
 import os, time, zipfile, errno, datetime
-from StringIO import StringIO
+from io import StringIO
 import tarfile
 
 from werkzeug.http import http_date
@@ -78,11 +78,11 @@ def absoluteName(url, pagename):
         @return: PageName, filename.ext
     """
     url = wikiutil.AbsPageName(pagename, url)
-    pieces = url.split(u'/')
+    pieces = url.split('/')
     if len(pieces) == 1:
         return pagename, pieces[0]
     else:
-        return u"/".join(pieces[:-1]), pieces[-1]
+        return "/".join(pieces[:-1]), pieces[-1]
 
 
 def get_action(request, filename, do):
@@ -160,7 +160,7 @@ def getFilename(request, pagename, filename):
         @rtype: string (in config.charset encoding)
         @return: complete path/filename of attached file
     """
-    if isinstance(filename, unicode):
+    if isinstance(filename, str):
         filename = filename.encode(config.charset)
     return os.path.join(getAttachDir(request, pagename, create=1), filename)
 
@@ -429,7 +429,7 @@ def _build_filelist(request, pagename, showheader, readonly, mime_type='*', filt
         may_write = request.user.may.write(pagename)
         may_delete = request.user.may.delete(pagename)
 
-        html.append(u"""\
+        html.append("""\
 <script>
 function checkAll(bx, targets_name) {
   var cbs = document.getElementsByTagName('input');
@@ -514,7 +514,7 @@ function checkAll(bx, targets_name) {
             html.append(" (%(fmtime)s, %(fsize)s KB) [[attachment:%(file)s]]" % parmdict)
             html.append(fmt.listitem(0))
         html.append(fmt.bullet_list(0))
-        html.append(u"""\
+        html.append("""\
 <input type="checkbox" onclick="checkAll(this, 'fn')">\
 &nbsp;%(all_files)s&nbsp;|&nbsp;%(sel_files)s
 <input type="radio" name="multifile" value="rm">%(delete)s</input>
@@ -554,7 +554,7 @@ def _do_multifile(pagename, request):
         for fn in fnames:
             remove_attachment(request, pagename, fn)
         msg = _("Attachment '%(filename)s' deleted.") % dict(
-                filename=u'{%s}' % ','.join(fnames))
+                filename='{%s}' % ','.join(fnames))
         return upload_form(pagename, request, msg=msg)
     if action == 'mv':
         if not request.user.may.delete(pagename):
@@ -569,9 +569,9 @@ def _do_multifile(pagename, request):
                 fails.append(fn)
         msg = _("Attachment '%(pagename)s/%(filename)s' moved to '%(new_pagename)s/%(new_filename)s'.") % dict(
                 pagename=pagename,
-                filename=u'{%s}' % ','.join(fnames),
+                filename='{%s}' % ','.join(fnames),
                 new_pagename=dest_pagename,
-                new_filename=u'*')
+                new_filename='*')
         if fails:
             msg += " " + _("Failed: %s") % ", ".join(fails)
         return upload_form(pagename, request, msg=msg)
@@ -586,13 +586,13 @@ def _do_multifile(pagename, request):
                 fails.append(fn)
         msg = _("Attachment '%(pagename)s/%(filename)s' copied to '%(new_pagename)s/%(new_filename)s'.") % dict(
                 pagename=pagename,
-                filename=u'{%s}' % ','.join(fnames),
+                filename='{%s}' % ','.join(fnames),
                 new_pagename=dest_pagename,
-                new_filename=u'*')
+                new_filename='*')
         if fails:
             msg += " " + _("Failed: %s") % ", ".join(fails)
         return upload_form(pagename, request, msg=msg)
-    return u'unsupported multifile operation'
+    return 'unsupported multifile operation'
 
 
 def _get_files(request, pagename):
@@ -623,7 +623,7 @@ def send_link_rel(request, pagename):
     files = _get_files(request, pagename)
     for fname in files:
         url = getAttachUrl(pagename, fname, request, do='view')
-        request.write(u'<link rel="Appendix" title="%s" href="%s">\n' % (
+        request.write('<link rel="Appendix" title="%s" href="%s">\n' % (
                       wikiutil.escape(fname, 1),
                       wikiutil.escape(url, 1)))
 
@@ -749,9 +749,9 @@ def _do_upload(pagename, request):
     if overwrite and not request.user.may.delete(pagename):
         return _('You are not allowed to overwrite a file attachment of this page.')
 
-    target = form.get('target', u'').strip()
+    target = form.get('target', '').strip()
     if not target:
-        target = file_upload.filename or u''
+        target = file_upload.filename or ''
 
     target = wikiutil.clean_input(target)
 
@@ -811,7 +811,7 @@ class ContainerItem:
     def put(self, member, content, content_length=None):
         """ save data into a container's member """
         tf = tarfile.TarFile(self.container_filename, mode='a')
-        if isinstance(member, unicode):
+        if isinstance(member, str):
             member = member.encode('utf-8')
         ti = tarfile.TarInfo(member)
         if isinstance(content, str):
@@ -1181,7 +1181,7 @@ def _do_unzip(pagename, request, overwrite=False):
                         'filelist': ', '.join(not_overwritten), }
             else:
                 msg = _("Attachment '%(filename)s' unzipped.") % {'filename': filename}
-    except (IOError, RuntimeError, zipfile.BadZipfile, zipfile.LargeZipFile), err:
+    except (IOError, RuntimeError, zipfile.BadZipfile, zipfile.LargeZipFile) as err:
         # We don't want to crash with a traceback here (an exception
         # here could be caused by an uploaded defective zip file - and
         # if we crash here, the user does not get a UI to remove the
@@ -1294,7 +1294,7 @@ def send_viewfile(pagename, request):
                 fmt.url(0))
         request.write('For using an external program follow this link %s' % link)
         return
-    request.write(m.execute('EmbedObject', u'target="%s", pagename="%s"' % (filename, pagename)))
+    request.write(m.execute('EmbedObject', 'target="%s", pagename="%s"' % (filename, pagename)))
     return
 
 

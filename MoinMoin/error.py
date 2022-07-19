@@ -24,31 +24,13 @@ class Error(Exception):
     You can init this class with either unicode or string using
     config.charset encoding. On output, the class will convert the string
     to unicode or the unicode to string, using config.charset.
-
-    When you want to render an error, use unicode() or str() as needed.
     """
 
     def __init__(self, message):
-        """ Initialize an error, decode if needed
-
-        @param message: unicode, str or object that support __unicode__
-            and __str__. __str__ should use config.charset.
-        """
         self.message = message
 
-    def __unicode__(self):
-        """ Return unicode error message """
-        if isinstance(self.message, str):
-            return unicode(self.message, config.charset)
-        else:
-            return unicode(self.message)
-
     def __str__(self):
-        """ Return encoded message """
-        if isinstance(self.message, unicode):
-            return self.message.encode(config.charset)
-        else:
-            return str(self.message)
+        return str(self.message)
 
     def __getitem__(self, item):
         """ Make it possible to access attributes like a dict """

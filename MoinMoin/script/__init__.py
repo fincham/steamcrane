@@ -8,7 +8,7 @@
 """
 
 import os, sys, time
-from StringIO import StringIO
+from io import StringIO
 
 flag_quiet = 0
 
@@ -102,7 +102,7 @@ class Script:
         self.def_values = def_values
 
         global _start_time
-        _start_time = time.clock()
+        _start_time = time.time()
 
         import optparse
         from MoinMoin import version
@@ -257,10 +257,10 @@ Specific options:
         # We have to use the args list here instead of optparse, as optparse only
         # deals with things coming before command subcommand.
         if "--help" in args or "-h" in args:
-            print "MoinMoin Help - %s/ %s\n" % (cmd_module, cmd_name)
-            print plugin_class.__doc__
-            print "Command line reference:"
-            print "======================="
+            print("MoinMoin Help - %s/ %s\n" % (cmd_module, cmd_name))
+            print(plugin_class.__doc__)
+            print("Command line reference:")
+            print("=======================")
             plugin_class(args[2:], self.options).parser.print_help()
         else:
             plugin_class(args[2:], self.options).run() # all starts again there

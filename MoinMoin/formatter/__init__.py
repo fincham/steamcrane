@@ -47,7 +47,7 @@ class FormatterBase:
                       re.escape before passing generic strings!) or a compiled
                       re object. raises re.error for invalid re.
         """
-        if isinstance(hi_re, (str, unicode)):
+        if isinstance(hi_re, str):
             hi_re = re.compile(hi_re, re.U + re.IGNORECASE)
         self._highlight_re = hi_re
 
@@ -310,8 +310,8 @@ class FormatterBase:
         # call the macro
         try:
             return macro_obj.execute(name, args)
-        except ImportError, err:
-            errmsg = unicode(err)
+        except ImportError as err:
+            errmsg = str(err)
             if not name in errmsg:
                 raise
             if markup:

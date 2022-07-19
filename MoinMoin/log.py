@@ -134,11 +134,11 @@ def load_config(conf_fname=None):
             l = getLogger(__name__)
             l.info('using logging configuration read from "%s"' % conf_fname)
             warnings.showwarning = _log_warning
-        except Exception, err: # XXX be more precise
+        except Exception as err: # XXX be more precise
             err_msg = str(err)
     if not configured:
         # load builtin fallback logging config
-        from StringIO import StringIO
+        from io import StringIO
         f = StringIO(logging_config)
         try:
             logging.config.fileConfig(f)
@@ -154,6 +154,7 @@ def load_config(conf_fname=None):
     import MoinMoin
     code_path = os.path.dirname(MoinMoin.__file__)
     from MoinMoin.version import project, release, revision
+    l = getLogger(__name__)
     l.info('Running %s %s %s code from %s' % (project, release, revision, code_path))
 
 
@@ -166,7 +167,7 @@ def getLogger(name):
     if not configured:
         load_config()
     logger = logging.getLogger(name)
-    for levelnumber, levelname in logging._levelNames.items():
+    for levelnumber, levelname in logging._levelToName.items():
         if isinstance(levelnumber, int): # that list has also the reverse mapping...
             setattr(logger, levelname, levelnumber)
     return logger

@@ -32,7 +32,7 @@ def encodeAddress(address, charset):
     @rtype: string
     @return: encoded address
     """
-    assert isinstance(address, unicode)
+    assert isinstance(address, str)
     composite = re.compile(r'(?P<phrase>.*?)(?P<blanks>\s*)\<(?P<addr>.*)\>', re.UNICODE)
     match = composite.match(address)
     if match:
@@ -85,7 +85,7 @@ def sendmail(request, to, subject, text, mail_from=None):
     subject = subject.encode(config.charset)
 
     # Create a text/plain body using CRLF (see RFC2822)
-    text = text.replace(u'\n', u'\r\n')
+    text = text.replace('\n', '\r\n')
     text = text.encode(config.charset)
 
     # Create a message using config.charset and quoted printable
@@ -149,13 +149,13 @@ def sendmail(request, to, subject, text, mail_from=None):
                 except AttributeError:
                     # in case the connection failed, SMTP has no "sock" attribute
                     pass
-        except UnicodeError, e:
+        except UnicodeError as e:
             logging.exception("unicode error [%r -> %r]" % (mail_from, to, ))
             return (0, str(e))
-        except smtplib.SMTPException, e:
+        except smtplib.SMTPException as e:
             logging.exception("smtp mail failed with an exception.")
             return (0, str(e))
-        except (os.error, socket.error), e:
+        except (os.error, socket.error) as e:
             logging.exception("smtp mail failed with an exception.")
             return (0, _("Connection to mailserver '%(server)s' failed: %(reason)s") % {
                 'server': cfg.mail_smarthost,
@@ -191,7 +191,7 @@ def encodeSpamSafeEmail(email_address, obfuscation_text=''):
     """
     address = email_address.lower()
     # uppercase letters will be stripped by decodeSpamSafeEmail
-    for word, sign in _transdict.items():
+    for word, sign in list(_transdict.items()):
         address = address.replace(sign, ' %s ' % word)
     if obfuscation_text.isalpha():
         # is the obfuscation_text alphabetic
